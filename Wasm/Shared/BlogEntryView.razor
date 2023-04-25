@@ -1,0 +1,33 @@
+﻿@using Lab6.Wasm.Models
+
+
+<div class="blog-entry">
+    <h3>@Entry.Title</h3>
+    <p>@Entry.PostedTime</p>
+    <p>@((MarkupString)Entry.Content)</p>
+    <button @onclick="DeleteAsync">Delete</button>
+    <button @onclick="EditAsync">Edit</button>
+</div>
+
+
+@code {
+
+    [Parameter]
+    public BlogEntry Entry { get; set; } = default!;
+
+    [Parameter]
+    public EventCallback<BlogEntry> OnDelete { get; set; }
+
+    [Parameter]
+    public EventCallback<BlogEntry> OnEdit { get; set; }
+    public async Task DeleteAsync()
+    {
+        await OnDelete.InvokeAsync(Entry);
+    }
+
+    public async Task EditAsync()
+    {
+        await OnEdit.InvokeAsync(Entry);
+    }
+
+}

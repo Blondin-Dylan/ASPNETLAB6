@@ -1,0 +1,84 @@
+@page "/blog"
+@using Lab6.Wasm.Models
+@inject HttpClient Http
+
+<PageTitle>Blog Entry</PageTitle>
+
+<h1>Blog Entry</h1>
+
+<input type="hidden" @bind="id">
+<input placeholder="Title" @bind="title" />
+<input placeholder="Content" @bind="content" />
+<button @onclick="AddBlogEntry">Add/Edit</button>
+
+@if (_blogEntries != null)
+{
+    @foreach (var entry in _blogEntries)
+    {
+        <BlogEntryView Entry="@entry" OnDelete="@DeleteAsync" OnEdit="@EditAsync" />
+    }
+}
+
+@code {
+
+    private List<BlogEntry>? _blogEntries { get; set; } = default!;
+    private string title = string.Empty, content = string.Empty;
+    private uint? id = null;
+    protected override async Task OnParametersSetAsync()
+    {
+        await RefreshEntries();
+
+    }
+    public async Task RefreshEntries()
+    {
+        if (_blogEntries != null)
+        {
+            _blogEntries.Clear();
+        }
+
+        _blogEntries = await Http.GetFromJsonAsync<List<BlogEntry>>("http://localhost:5232/api/Blog");
+        StateHasChanged();
+
+    }
+    public async Task DeleteAsync(BlogEntry entry)
+    {
+        await Http.DeleteAsync($"http://localhost:5232/api/Blog/{entry.BlogEntryId}");
+        await RefreshEntries();
+    }
+    public Task EditAsync(BlogEntry entry)
+    {
+        title = entry.Title;
+        content = entry.Content;
+        id = entry.BlogEntryId;
+        return Task.CompletedTask;
+    }
+
+    private async void AddBlogEntry()
+    {
+        
+        if (!string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(content))
+        {
+            
+            var be = new BlogEntry { Title = title, Content = content };
+            
+            if (id == null)
+            {
+                await Http.PostAsJsonAsync("http://localhost:5232/api/Blog/", be);
+            }
+            else
+            {
+                be.BlogEntryId = id.Value;
+                await Http.PutAsJsonAsync($"http://localhost:5232/api/Blog/{id}", be);
+            }
+            title = "";
+            content = string.Empty;
+            if (id != null)
+            {
+                id = null;
+                await RefreshEntries();
+            }
+        }
+    }
+
+
+}
